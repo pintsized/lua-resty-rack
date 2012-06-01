@@ -46,19 +46,21 @@ end
 function run()
     -- The req data available from ngx_lua is read only for the
     -- most part.
-    ngx.ctx.rack.req = {
-        method = ngx.var.request_method,
-        header = ngx.req.get_headers,
-        body = nil,
-        args = ngx.req.get_uri_args(),
-    }
-
-    ngx.ctx.rack.res = {
-        status = nil,
-        header = {},
-        body = nil,
-    }
-        
+    if not ngx.ctx.rack then
+        ngx.ctx.rack = {
+            req = {
+                method = ngx.var.request_method,
+                header = ngx.req.get_headers(),
+                body = nil,
+                args = ngx.req.get_uri_args(),
+            },
+            res = {
+                status = nil,
+                header = {},
+                body = nil,
+            }
+        }
+    end 
     next()
 end
 
