@@ -28,10 +28,15 @@ function use(...)
     else
         mw = table.remove(args, 1)
     end
-    options = table.remove(args, 1)
+    options = table.remove(args, 1) or {}
+
+    if route then
+        -- Only carry on if we have a route match
+        if string.sub(ngx.var.uri, 1, route:len()) ~= route then return end
+    end
     
     -- If we have a 'call' function, then we insert the result into our rack
-    if type(mw.call) == "function" then
+    if type(mw) == "table" and type(mw.call) == "function" then
         table.insert(middleware, mw.call(options))
     end
 end
@@ -75,6 +80,7 @@ function next()
         end
     end
 end
+
 
 -- to prevent use of casual module global variables
 getmetatable(resty.rack).__newindex = function (table, key, val)
