@@ -44,15 +44,18 @@ end
 
 -- Start the rack.
 function run()
-    -- The req data available from ngx_lua is read only for the
-    -- most part.
+    -- We need a decent req / res environment to pass around middleware.
     if not ngx.ctx.rack then
         ngx.ctx.rack = {
             req = {
                 method = ngx.var.request_method,
+                scheme = ngx.var.scheme,
+                uri = ngx.var.uri,
+                host = ngx.var.host,
+                query = ngx.var.query_string or "",
+                param = ngx.req.get_uri_args(),
                 header = ngx.req.get_headers(),
                 body = nil,
-                args = ngx.req.get_uri_args(),
             },
             res = {
                 status = nil,
@@ -60,6 +63,11 @@ function run()
                 body = nil,
             }
         }
+
+        -- uri_relative = /test?arg=true 
+        ngx.ctx.rack.req.uri_relative = ngx.var.uri .. ngx.var.is_args .. ngx.ctx.rack.req.query
+        -- uri_full = http://example.com/test?arg=true
+        ngx.ctx.rack.req.uri_full = ngx.var.scheme .. '://' .. ngx.var.host .. ngx.ctx.rack.req.uri_relative
     end 
     next()
 end
