@@ -32,12 +32,15 @@ function use(...)
 
     if route then
         -- Only carry on if we have a route match
-        if string.sub(ngx.var.uri, 1, route:len()) ~= route then return end
+        if string.sub(ngx.var.uri, 1, route:len()) ~= route then return false end
     end
     
     -- If we have a 'call' function, then we insert the result into our rack
     if type(mw) == "table" and type(mw.call) == "function" then
         table.insert(middleware, mw.call(options))
+        return true
+    else
+        return nil, "Middleware provided did not contain the function 'call(options)'"
     end
 end
 
