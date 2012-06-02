@@ -56,7 +56,7 @@ function run()
                 uri = ngx.var.uri,
                 host = ngx.var.host,
                 query = ngx.var.query_string or "",
-                param = ngx.req.get_uri_args(),
+                args = ngx.req.get_uri_args(),
                 header = ngx.req.get_headers(),
                 body = nil,
             },
