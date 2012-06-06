@@ -58,7 +58,7 @@ function run()
                 query = ngx.var.query_string or "",
                 args = ngx.req.get_uri_args(),
                 header = ngx.req.get_headers(),
-                body = nil,
+                body = "",
             },
             res = {
                 status = nil,
@@ -80,17 +80,20 @@ end
 function next()
     -- Pick each piece of middleware off in order
     local mw = table.remove(middleware, 1)
+    ngx.log(ngx.NOTICE, tostring(mw))
     if type(mw) == "function" then
-        local status, header, body = mw(ngx.ctx.rack.req, ngx.ctx.rack.res, next)
-        -- If we get non-nil values back, this middleware is handling the response.
-        if status and header and body then
-            ngx.status = status
-            for k,v in pairs(header) do
-                ngx.header[k] = v
-            end
-            ngx.print(body)
-            return -- all done
+        -- Call the middleware, which may itself call next(). 
+        -- The first to return is handling the reponse.
+        mw(ngx.ctx.rack.req, ngx.ctx.rack.res, next)
+    end
+        
+    if not ngx.ctx.rack.headers_sent then
+        ngx.status = ngx.ctx.rack.res.status
+        for k,v in pairs(ngx.ctx.rack.res.header) do
+            ngx.header[k] = v
         end
+        ngx.ctx.rack.headers_sent = true
+        ngx.print(ngx.ctx.rack.res.body)
     end
 end
 
