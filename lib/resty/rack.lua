@@ -80,7 +80,7 @@ end
 function next()
     -- Pick each piece of middleware off in order
     local mw = table.remove(middleware, 1)
-    ngx.log(ngx.NOTICE, tostring(mw))
+
     if type(mw) == "function" then
         -- Call the middleware, which may itself call next(). 
         -- The first to return is handling the reponse.
