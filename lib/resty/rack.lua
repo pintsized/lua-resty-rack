@@ -22,7 +22,7 @@ function use(...)
     local args = {...}
     local route, mw, options = nil, nil, nil
     route = table.remove(args, 1)
-    if type(route) == "table" then
+    if type(route) == "table" or type(route) == "function" then
         mw = route
         route = nil
     else
@@ -39,8 +39,12 @@ function use(...)
     if type(mw) == "table" and type(mw.call) == "function" then
         table.insert(middleware, mw.call(options))
         return true
+    -- Or if we simply have a function, we can add that instead
+    elseif (type(mw) == "function") then
+        table.insert(middleware, mw)
+        return true
     else
-        return nil, "Middleware provided did not contain the function 'call(options)'"
+        return nil, "Invalid middleware"
     end
 end
 
@@ -81,19 +85,32 @@ function next()
     -- Pick each piece of middleware off in order
     local mw = table.remove(middleware, 1)
 
+
     if type(mw) == "function" then
         -- Call the middleware, which may itself call next(). 
         -- The first to return is handling the reponse.
-        mw(ngx.ctx.rack.req, ngx.ctx.rack.res, next)
-    end
+        local post_function = mw(ngx.ctx.rack.req, ngx.ctx.rack.res, next)
         
-    if not ngx.ctx.rack.headers_sent then
-        ngx.status = ngx.ctx.rack.res.status
-        for k,v in pairs(ngx.ctx.rack.res.header) do
-            ngx.header[k] = v
+        if not ngx.ctx.rack.headers_sent then
+            assert(ngx.ctx.rack.res.status, 
+            "Middleware returned with no status. Perhaps you need to call next().")
+
+            ngx.status = ngx.ctx.rack.res.status
+            for k,v in pairs(ngx.ctx.rack.res.header) do
+                ngx.header[k] = v
+            end
+            ngx.ctx.rack.headers_sent = true
+            ngx.print(ngx.ctx.rack.res.body)
+            ngx.eof()
         end
-        ngx.ctx.rack.headers_sent = true
-        ngx.print(ngx.ctx.rack.res.body)
+
+        -- Middleware may return a function to call post-EOF.
+        -- This code will only run for persistent connections, and is not really guaranteed
+        -- to run, since browser behaviours differ. Also be aware that long running tasks
+        -- may affect performance by hogging the connection.
+        if post_function and type(post_function == "function") then
+            post_function(ngx.ctx.rack.req, ngx.ctx.rack.res)
+        end
     end
 end
 
