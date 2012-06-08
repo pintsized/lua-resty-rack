@@ -16,7 +16,7 @@ Clone the repo and ensure the contents of `lib` are in your `lua_package_path` i
 
 To install middleware for a given `location`, you simply call `rack.use(middleware)` in the order you wish the modules to run, and then finally call `rack.run()`.
 
-```
+```nginx
 server {
     location / {
         content_by_lua '
@@ -36,13 +36,13 @@ server {
 
 If `route` is supplied, the middleware will only be run for requests where `route` is in the path (`ngx.var.uri`). If the middleware requires any options to be selected they can be provided, usually as a table, as the third parameter.
 
-```
+```lua
 rack.use('/some/path', app, { foo = 'bar' })
 ```
 
 For simple cases, the `middleware` parameter can also be a simple function rather than a Lua module. Your function should accept `req`, `res`, and `next` as parameters. See below for instructions on writing middleware.
 
-```
+```lua
 rack.use(function(req, res, next)
     res.header["X-Homer"] = "Doh!"
     next()
@@ -68,7 +68,7 @@ Currently these are preloaded, which might not be sensible. For now, consider th
 
 Middleware applications are simply Lua modules which use the HTTP request and response as a minimal interface. They must implement the function `call(options)` which returns a function. The parameters `(req, res, next)` are defined below.
 
-```
+```lua
 module("resty.rack.method_override", package.seeall)
 
 _VERSION = '0.01'
@@ -104,7 +104,7 @@ end
 This parameter is a function provided to the middleware, which may be called to indicate rack should try the next middleware. If your application does not intend to send the response to the browser, it must call this function. If however your application is taking responsibility for the response, simply return without calling next.
 
 *Example purely modifying the request.*
-```
+```lua
 function call(options)
     return function(req, res, next)
         local key = options['key'] or '_method'
@@ -115,7 +115,7 @@ end
 ```
 
 *Example generating a response.*
-```
+```lua
 function call(options)
     return function(req, res)
         res.status = 200
