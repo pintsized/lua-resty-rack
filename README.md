@@ -129,7 +129,7 @@ end
 
 Your application can add new fields or even functions to the req / res tables where appropriate, which could be used by other middleware so long as the dependencies are clear (and one calls `use()` in the correct order). 
 
-For exampe, [ledge.bind()](https://github.com/pintsized/ledge/blob/master/README.md#ledgebindevent_name-callback) adds some convenience methods to help determine cacheabiliy.
+For exampe, [ledge](https://github.com/pintsized/ledge/blob/master/README.md#ledgebindevent_name-callback) adds some convenience methods to help determine cacheabiliy.
 
 ## Author
 
