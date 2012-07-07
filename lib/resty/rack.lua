@@ -8,6 +8,7 @@ middleware = {}
 -- This is at least means the modules only load once, but perhaps some kind
 -- of lazy loading method would be better.
 middleware.method_override = require "resty.rack.method_override"
+middleware.read_request_headers = require "resty.rack.read_request_headers"
 middleware.read_body = require "resty.rack.read_body"
 
 
