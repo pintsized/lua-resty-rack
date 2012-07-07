@@ -1,6 +1,6 @@
 module("resty.rack", package.seeall)
 
-_VERSION = '0.01'
+_VERSION = '0.02'
 
 middleware = {}
 
