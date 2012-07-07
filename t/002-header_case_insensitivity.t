@@ -1,7 +1,7 @@
 use Test::Nginx::Socket;
 use Cwd qw(cwd);
 
-plan tests => 4;
+plan tests => 6;
 
 my $pwd = cwd();
 
@@ -58,6 +58,34 @@ location /t {
                 res.header["x_fOo"],
                 res.header.x_fOo,
                 res.header.X_Foo,
+            }
+            res.body = cjson.encode(r)
+        end)
+        rack.run()
+    ';
+}
+--- request
+GET /t
+--- response_body
+["bar","bar","bar","bar","bar","bar"]
+
+=== TEST 3: Req headers, defined in code.
+--- http_config eval: $::HttpConfig
+--- config
+location /t {
+    content_by_lua '
+        local rack = require "resty.rack"
+        local cjson = require "cjson"
+        rack.use(function(req, res)
+            res.status = 200
+            req.header["X-Foo"] = "bar"
+            local r = {
+                req.header["X-Foo"],
+                req.header["x-foo"],
+                req.header["x-fOo"],
+                req.header["x_fOo"],
+                req.header.x_fOo,
+                req.header.X_Foo,
             }
             res.body = cjson.encode(r)
         end)

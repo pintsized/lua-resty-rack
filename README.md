@@ -90,13 +90,13 @@ end
 * req.host (example.com),
 * req.query (var1=1&var2=2)
 * req.args (table)
-* req.header (table)
+* req.header (table, matching case insensitively. Request headers are read on demand)
 * req.body (an empty string until read)
 
 ### res
 
 * req.status (number)
-* res.header (table)
+* res.header (table, matching case insensitvely)
 * res.body (string)
 
 ### next

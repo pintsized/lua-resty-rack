@@ -61,7 +61,7 @@ function run()
                 host = ngx.var.host,
                 query = ngx.var.query_string or "",
                 args = ngx.req.get_uri_args(),
-                header = ngx.req.get_headers(),
+                header = {},
                 body = "",
             },
             res = {
@@ -70,11 +70,67 @@ function run()
                 body = nil,
             }
         }
-
+        
         -- uri_relative = /test?arg=true 
         ngx.ctx.rack.req.uri_relative = ngx.var.uri .. ngx.var.is_args .. ngx.ctx.rack.req.query
+
         -- uri_full = http://example.com/test?arg=true
         ngx.ctx.rack.req.uri_full = ngx.var.scheme .. '://' .. ngx.var.host .. ngx.ctx.rack.req.uri_relative
+
+
+        -- Case insensitive request and response headers.
+        --
+        -- ngx_lua has request headers available case insensitively with ngx.var.http_*, but
+        -- these cannot be iternated over or added to (for fake request headers).
+        --
+        -- Response headers are set to ngx.header.*, and can also be set and read case
+        -- insensitively, but they cannot be iterated over.
+        --
+        -- Ideally, we should be able to set/get headers in req.header and res.header case
+        -- insensitively, with optional underscores instead of dashes (for consistency), and
+        -- iterate over them (with the case they were set).
+
+        
+        -- For request headers, we must:
+        -- * Keep track of fake request headers in a normalised (lowercased / underscored) state.
+        -- * First try a direct hit, then fall back to the normalised table, and ngx.var.http_*
+        local req_h_mt = {
+            normalised = {}
+        }
+
+        req_h_mt.__index = function(t, k)
+            if rawget(t, k) ~= nil then
+                return rawget(t, k)
+            end
+
+            k = k:lower():gsub("-", "_")
+            return req_h_mt.normalised[k] or ngx.var["http_" .. k] 
+        end
+
+        req_h_mt.__newindex = function(t, k, v)
+            rawset(t, k, v)
+
+            k = k:lower():gsub("-", "_")
+            req_h_mt.normalised[k] = v
+        end
+
+        setmetatable(ngx.ctx.rack.req.header, req_h_mt)
+
+
+        -- For response headers, we keep a copy so that headers can be iterated
+        -- over, but allow ngx.header to handle the case business.
+        -- Note that headers set to ngx.header outside of rack cannot be iterated over.
+        local res_h_mt = {
+            __index = function(t, k)
+                return ngx.header[k]
+            end,
+            __newindex = function(t, k, v)
+                rawset(t, k, v)
+                ngx.header[k] = v
+            end
+        }
+
+        setmetatable(ngx.ctx.rack.res.header, res_h_mt)
     end 
     next()
 end
@@ -90,17 +146,13 @@ function next()
         -- Call the middleware, which may itself call next(). 
         -- The first to return is handling the reponse.
         local post_function = mw(ngx.ctx.rack.req, ngx.ctx.rack.res, next)
-        
-        if not ngx.ctx.rack.headers_sent then
+
+        if not ngx.headers_sent then
             assert(ngx.ctx.rack.res.status, 
-            "Middleware returned with no status. Perhaps you need to call next().")
+                "Middleware returned with no status. Perhaps you need to call next().")
 
             ngx.status = ngx.ctx.rack.res.status
-            for k,v in pairs(ngx.ctx.rack.res.header) do
-                ngx.header[k] = v
-            end
-            ngx.ctx.rack.headers_sent = true
-            ngx.print(ngx.ctx.rack.res.body)
+            ngx.say(ngx.ctx.rack.res.body)
             ngx.eof()
         end
 
