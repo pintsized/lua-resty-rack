@@ -6,7 +6,7 @@ Drawing inspiration from [Rack](http://rack.github.com/) and also [Connect](http
 
 ## Status
 
-This library is considered experimental and the API may change without notice. Please free to offer suggestions or raise issues here on Github.
+This library is considered experimental and the API may change without notice. Please feel free to offer suggestions or raise issues here on Github.
 
 ## Installation
 
@@ -57,12 +57,30 @@ Runs each of the middleware in order, until one chooses to handle the response. 
 
 ## Bundled Middleware
 
-Currently there are two simple example pieces of middlware bundled. The plan is to increase that to provide a set of utilities similar to that of [Connect](http://www.senchalabs.org/connect/), where appropriate.
+### method_override
+```lua
+rack.use(rack.middleware.method_override, { key = "METHOD" })
+```
 
-* resty.rack.method_override
-* resty.rack.read_body
+Override the HTTP method using a querystring value. The default argument name is "_method" but this can be overriden by setting the option "key".
 
-Currently these are preloaded, which might not be sensible. For now, consider them as examples.
+
+### read_request_headers
+```lua
+rack.use(rack.middleware.read_request_headers, { max = 50 })
+```
+
+This is only needed if you wish to iterate over the HTTP request headers. They will be lazy loaded when accessed via `req.header`.
+
+You may specify a limit to the number of request headers to be read, which defaults to `100`. The limit can be removed by specifying a max of `0`, but is [strongly discouraged](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_headers).
+
+### read_body
+```lua
+rack.use(rack.middleware.read_body)
+```
+
+Explicitly reads the request body (raw).
+
 
 ## Creating Middleware
 
@@ -82,22 +100,59 @@ function call(options)
 end
 ```
 
-### req
+## API
 
-* req.method (GET|POST...)
-* req.scheme (http|https)
-* req.uri (/my/uri)
-* req.host (example.com),
-* req.query (var1=1&var2=2)
-* req.args (table)
-* req.header (table, matching case insensitively. Request headers are read on demand)
-* req.body (an empty string until read)
+### req.method
 
-### res
+The HTTP method, e.g. `GET`, set from `ngx.var.request_method`.
 
-* req.status (number)
-* res.header (table, matching case insensitvely)
-* res.body (string)
+### req.scheme
+
+The protocol scheme `http|https`, set from `ngx.var.scheme`.
+
+### req.uri
+
+e.g. `/my/uri`, set from `ngx.var.uri`.
+
+### req.host
+
+The hostname, e.g. `example.com`, set from `ngx.var.host`.
+
+### req.query
+
+The querystring, e.g. `var1=1&var2=2`, set from `ngx.var.query_string`.
+ 
+### req.args
+
+The query args, as a `table`, set from `ngx.req.get_uri_args()`.
+
+### req.header
+
+A table containing the request headers. Keys are matched case insensitvely, and optionally with underscores instead of hyphens. e.g.
+
+```lua
+req.header["X-Foo"] = "bar"
+res.body = req.header.x_foo
+    --> "bar"
+```
+
+HTTP Request headers are read on demand and so cannot be iterated over unless the `read_request_headers` middleware is in use).
+
+### req.body
+
+An empty string until read with the `read_body` middleware.
+
+### res.status
+
+The HTTP status code to return. There are [constants defined](http://wiki.nginx.org/HttpLuaModule#HTTP_status_constants) for common statuses.
+
+### res.header
+
+A table of response headers, which can be matched case insensitively and optionally with underscores instead of hyphens (see `req.header` above).
+
+### res.body
+
+The response body.
 
 ### next
 
@@ -129,17 +184,15 @@ end
 
 Your application can add new fields or even functions to the req / res tables where appropriate, which could be used by other middleware so long as the dependencies are clear (and one calls `use()` in the correct order). 
 
-For exampe, [ledge](https://github.com/pintsized/ledge/blob/master/README.md#ledgebindevent_name-callback) adds some convenience methods to help determine cacheabiliy.
-
 ## Author
 
-James Hurst <jhurst@squiz.co.uk>
+James Hurst <james@pintsized.co.uk>
 
 ## Licence
 
 This module is licensed under the 2-clause BSD license.
 
-Copyright (c) 2012, James Hurst <jhurst@squiz.co.uk>
+Copyright (c) 2012, James Hurst <james@pintsized.co.uk>
 
 All rights reserved.
 
