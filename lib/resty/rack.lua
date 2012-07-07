@@ -100,10 +100,6 @@ function run()
         }
 
         req_h_mt.__index = function(t, k)
-            if rawget(t, k) ~= nil then
-                return rawget(t, k)
-            end
-
             k = k:lower():gsub("-", "_")
             return req_h_mt.normalised[k] or ngx.var["http_" .. k] 
         end
