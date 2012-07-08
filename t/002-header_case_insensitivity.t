@@ -1,7 +1,7 @@
 use Test::Nginx::Socket;
 use Cwd qw(cwd);
 
-plan tests => 6;
+plan tests => 8;
 
 my $pwd = cwd();
 
@@ -96,3 +96,23 @@ location /t {
 GET /t
 --- response_body
 ["bar","bar","bar","bar","bar","bar"]
+
+=== TEST 4: Change res headers (tests metatables)
+--- http_config eval: $::HttpConfig
+--- config
+location /t {
+    content_by_lua '
+        local rack = require "resty.rack"
+        local cjson = require "cjson"
+        rack.use(function(req, res)
+            res.status = 200
+            res.header["X-Foo"] = "bar"
+            res.header["X-Foo"] = "bars"
+        end)
+        rack.run()
+    ';
+}
+--- request
+GET /t
+--- response_headers
+X-Foo: bars

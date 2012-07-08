@@ -114,18 +114,22 @@ function run()
         setmetatable(ngx.ctx.rack.req.header, req_h_mt)
 
 
-        -- For response headers, we keep a copy so that headers can be iterated
-        -- over, but allow ngx.header to handle the case business.
-        -- Note that headers set to ngx.header outside of rack cannot be iterated over.
+        -- For response headers, we simply keep things proxied and normalised, to be set
+        -- to ngx.header.* later.
         local res_h_mt = {
-            __index = function(t, k)
-                return ngx.header[k]
-            end,
-            __newindex = function(t, k, v)
-                rawset(t, k, v)
-                ngx.header[k] = v
-            end
+            normalised = {}
         }
+
+        res_h_mt.__index = function(t, k)
+            k = k:lower():gsub("-", "_")
+            return res_h_mt.normalised[k]
+        end
+
+        res_h_mt.__newindex = function(t, k, v)
+            rawset(t, k, v)
+            k = k:lower():gsub("-", "_")
+            res_h_mt.normalised[k] = v
+        end
 
         setmetatable(ngx.ctx.rack.res.header, res_h_mt)
     end 
@@ -149,6 +153,9 @@ function next()
                 "Middleware returned with no status. Perhaps you need to call next().")
 
             ngx.status = ngx.ctx.rack.res.status
+            for k,v in pairs(ngx.ctx.rack.res.header) do
+                ngx.header[k] = v
+            end
             ngx.say(ngx.ctx.rack.res.body)
             ngx.eof()
         end
