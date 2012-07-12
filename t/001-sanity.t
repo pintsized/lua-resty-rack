@@ -41,8 +41,7 @@ location /t {
 --- request
 GET /t
 --- error_code: 200
---- response_body
-Hello
+--- response_body: Hello
 
 === TEST 3: Status code
 --- http_config eval: $::HttpConfig
@@ -81,5 +80,4 @@ location /t {
 --- request
 GET /t
 --- error_code: 200
---- response_body
-Module
+--- response_body: Module

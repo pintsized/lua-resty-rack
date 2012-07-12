@@ -156,7 +156,7 @@ function next()
             for k,v in pairs(ngx.ctx.rack.res.header) do
                 ngx.header[k] = v
             end
-            ngx.say(ngx.ctx.rack.res.body)
+            ngx.print(ngx.ctx.rack.res.body)
             ngx.eof()
         end
 

@@ -34,12 +34,11 @@ location /t {
         rack.run()
     ';
 }
---- request
-GET /t
 --- more_headers
 X-Foo: bar
---- response_body
-["bar","bar","bar","bar","bar","bar"]
+--- request
+GET /t
+--- response_body: ["bar","bar","bar","bar","bar","bar"]
 
 === TEST 2: Res headers, all cases.
 --- http_config eval: $::HttpConfig
@@ -66,8 +65,7 @@ location /t {
 }
 --- request
 GET /t
---- response_body
-["bar","bar","bar","bar","bar","bar"]
+--- response_body: ["bar","bar","bar","bar","bar","bar"]
 
 === TEST 3: Req headers, defined in code.
 --- http_config eval: $::HttpConfig
@@ -94,8 +92,7 @@ location /t {
 }
 --- request
 GET /t
---- response_body
-["bar","bar","bar","bar","bar","bar"]
+--- response_body: ["bar","bar","bar","bar","bar","bar"]
 
 === TEST 4: Change res headers (tests metatables)
 --- http_config eval: $::HttpConfig

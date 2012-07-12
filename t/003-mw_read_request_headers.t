@@ -34,8 +34,7 @@ location /t {
 GET /t
 --- more_headers
 X-Foo: bar
---- response_body
-[{},"bar"]
+--- response_body: [{},"bar"]
 
 
 === TEST 2: Pre loading (real) request headers.
@@ -57,5 +56,4 @@ location /t {
 GET /t
 --- more_headers
 X-Foo: bar
---- response_body_like
-^(.*)("X-Foo":"bar"{1})(.*)$
+--- response_body_like: ^(.*)("X-Foo":"bar"{1})(.*)$
