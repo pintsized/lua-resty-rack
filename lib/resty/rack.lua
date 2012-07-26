@@ -144,19 +144,29 @@ function next()
 
 
     if type(mw) == "function" then
+        local req = ngx.ctx.rack.req
+        local res = ngx.ctx.rack.res
+
         -- Call the middleware, which may itself call next(). 
         -- The first to return is handling the reponse.
-        local post_function = mw(ngx.ctx.rack.req, ngx.ctx.rack.res, next)
+        local post_function = mw(req, res, next)
 
         if not ngx.headers_sent then
-            assert(ngx.ctx.rack.res.status, 
+            assert(res.status, 
                 "Middleware returned with no status. Perhaps you need to call next().")
 
-            ngx.status = ngx.ctx.rack.res.status
-            for k,v in pairs(ngx.ctx.rack.res.header) do
+            -- If we have a 5xx or a 3/4xx and no body entity, exit allowing nginx config
+            -- to generate a response.
+            if res.status >= 500 or (res.status >= 300 and res.body == nil) then
+                ngx.exit(res.status)
+            end
+
+            -- Otherwise send the response as normal.
+            ngx.status = res.status
+            for k,v in pairs(res.header) do
                 ngx.header[k] = v
             end
-            ngx.print(ngx.ctx.rack.res.body)
+            ngx.print(res.body)
             ngx.eof()
         end
 
@@ -165,7 +175,7 @@ function next()
         -- to run, since browser behaviours differ. Also be aware that long running tasks
         -- may affect performance by hogging the connection.
         if post_function and type(post_function == "function") then
-            post_function(ngx.ctx.rack.req, ngx.ctx.rack.res)
+            post_function(req, res)
         end
     end
 end
